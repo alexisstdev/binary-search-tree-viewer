@@ -1,7 +1,8 @@
-﻿using Svg;
+﻿using Aspose.Svg;
+using Svg;
 using System;
 using System.Drawing;
-using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Arbol_Binario_Busqueda
@@ -9,76 +10,79 @@ namespace Arbol_Binario_Busqueda
     public partial class ABB : Form
     {
         private ArbolBB<AccesorioNadador> arbol = new();
+        private SVGDocument document = null;
+        private Aspose.Svg.Collections.HTMLCollection svgNodes;
+        private SvgDocument svgTree = null;
         private bool dragging;
         private int xPos;
         private int yPos;
 
         public ABB()
         {
+            try
+            {
+                svgTree = SvgDocument.Open<SvgDocument>("Dibujo/Figura.svg", null);
+                document = new SVGDocument("Dibujo/Figura.svg");
+                svgNodes = document.DocumentElement.GetElementsByClassName("node");
+
+                foreach (SVGGElement element in svgNodes)
+                {
+                    SvgElementCollection childrens = svgTree.GetElementById(element.Id).Children;
+                    childrens.GetSvgElementOf<SvgEllipse>();
+                    Aspose.Svg.DataTypes.SVGRect nodeBox = element.GetBBox();
+                }
+            }
+            catch (Exception)
+            {
+            }
+
             InitializeComponent();
         }
 
-        public void ActualizarArbol()
+        public void ActualizarControles()
         {
-            PicboxTree.Image = null;
-            PicboxTree.SizeMode = PictureBoxSizeMode.AutoSize;
-
             arbol.CrearArchivoDot();
+            svgTree = SvgDocument.Open<SvgDocument>("Dibujo/Figura.svg", null);
+            document = new SVGDocument("Dibujo/Figura.svg");
 
-            /* using (StreamReader sr = new StreamReader("Figura/Figura.svg"))
-             {
-                 string svg = sr.ReadToEnd();
-                 using (StreamWriter sw = new StreamWriter("Figura/Figura.svg"))
-                 {
-                     svg.
-                     sw.Write(svg);
-                 }
-             }*/
+            svgNodes = document.DocumentElement.GetElementsByClassName("node");
 
-            var arbolSvg = SvgDocument.Open<SvgDocument>("Figura/Figura.svg", null);
-            try
-            {
-                PicboxTree.Image = arbolSvg.Draw();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+            CentralizarArbolSvg();
+            PicboxTree.Image = svgTree.Draw();
             PicboxTree.Refresh();
+
+            ActualizarTabla();
+        }
+
+        public void CentralizarArbolSvg()
+        {
+            PicboxTree.Left = (PicboxTree.Parent.Width - PicboxTree.Width) / 2;
+            PicboxTree.Top = (PicboxTree.Parent.Height - PicboxTree.Height) / 2;
         }
 
         private void ActualizarTabla()
         {
             dtgTabla.Rows.Clear();
 
-            foreach (var accesorio in rbtnPreOrden.Checked ? arbol.PreOrden() : rbtnPostOrden.Checked ? arbol.PostOrden() : arbol.InOrden())
+            foreach (AccesorioNadador accesorio in rbtnPreOrden.Checked ? arbol.PreOrden() : rbtnPostOrden.Checked ? arbol.PostOrden() : arbol.InOrden())
             {
-                dtgTabla.Rows.Add(
-                    accesorio.Nombre,
-                    accesorio.Id,
-                    accesorio.Categoria,
-                    accesorio.Precio.ToString("C"),
-                    accesorio.Stock,
-                    accesorio.Ajustable ? "Si" : "No",
-                    accesorio.Talla,
-                    accesorio.Material,
-                    accesorio.FechaCompra.ToShortDateString());
+                dtgTabla.Rows.Add(accesorio.Nombre, accesorio.Id, accesorio.Categoria, accesorio.Precio.ToString("C"), accesorio.Stock, accesorio.Ajustable, accesorio.Talla, accesorio.Material, accesorio.FechaCompra.ToShortDateString());
             }
         }
 
         private void BtnAdd_Click(object sender, EventArgs e)
         {
-            if (!ValidarDatos(pnlAccesoryData)) return;
+            if (!ValidarDatos(pnlDatos)) return;
 
             string material = null;
             if (rbtnlicra.Checked) material = rbtnlicra.Text;
             if (rbtnPlastico.Checked) material = rbtnPlastico.Text;
             if (rbtnAlgodon.Checked) material = rbtnAlgodon.Text;
 
-            AccesorioNadador accesorio = new AccesorioNadador
+            AccesorioNadador accesorio = new()
             {
                 Nombre = txtNombre.Text,
-                Id = (int)nudId.Value,
+                Id = nudId.Value.ToString(),
                 Categoria = char.Parse(cbxCategoria.Text),
                 FechaCompra = dtpFechaCompra.Value,
                 Precio = (double)nudPrecio.Value,
@@ -98,9 +102,8 @@ namespace Arbol_Binario_Busqueda
                 return;
             }
 
-            ResetControls(pnlAccesoryData);
-            ActualizarTabla();
-            ActualizarArbol();
+            ReiniciarControles(pnlDatos);
+            ActualizarControles();
             MessageBox.Show($"El accesorio con ID {accesorio} Ha sido agregado correctamente", "Inserción exitosa");
         }
 
@@ -108,50 +111,45 @@ namespace Arbol_Binario_Busqueda
         {
             DialogResult dialogResult = MessageBox.Show($"¿Seguro que desea vaciar el arbol? Esta acción eliminará todos los elementos.", "Vaciar", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (dialogResult == DialogResult.No) return;
-            try
-            {
-                arbol.Vaciar();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-            ActualizarTabla();
-            ActualizarArbol();
-            ResetControls(pnlAccesoryData);
+
+            arbol.Vaciar();
+
+            ActualizarControles();
+            PicboxTree.Image = null;
+            ReiniciarControles(pnlControles.Panel1);
+        }
+
+        private void btnConfiguracion_Click(object sender, EventArgs e)
+        {
         }
 
         private void BtnDraw_Click(object sender, EventArgs e)
         {
-            var arbolSvg = SvgDocument.Open<SvgDocument>("Figura/Figura.svg", null);
-            try
-            {
-                PicboxTree.Image = arbolSvg.Draw();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
+            if (arbol.Vacio) return;
+
+            var arbolSvg = SvgDocument.Open<SvgDocument>("Dibujo/Figura.svg", null);
+            document = new SVGDocument("Dibujo/Figura.svg");
+
+            PicboxTree.Image = arbolSvg.Draw();
             PicboxTree.Refresh();
-            //ActualizarArbol();
         }
 
         private void BtnEliminar_Click(object sender, EventArgs e)
         {
-            /*if (dtgTabla.SelectedCells.Count > 0)
+            if (dtgTabla.SelectedCells.Count > 0)
             {
                 DataGridViewRow selectedRow = dtgTabla.Rows[dtgTabla.SelectedCells[0].RowIndex];
-                AccesorioNadador accesory = new AccesorioNadador
+                AccesorioNadador accesorio = new()
                 {
-                    Id = (int)selectedRow.Cells["Id"].Value,
+                    Id = selectedRow.Cells["Id"].Value.ToString(),
                 };
-                DialogResult dialogResult = MessageBox.Show($"Seguro que desea eliminar el accesorio con Id: {accesory.Id}", "Eliminar", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                DialogResult dialogResult = MessageBox.Show($"Seguro que desea eliminar el accesorio con Id: {accesorio}", "Eliminar", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (dialogResult == DialogResult.No) return;
 
-                accesory = arbol.Eliminar(accesory);
-                MessageBox.Show($"El accesorio{accesory}Ha sido eliminado", "Eliminación confirmada");
+                arbol.Eliminar(accesorio);
+                MessageBox.Show($"El accesorio {accesorio} Ha sido eliminado", "Eliminación confirmada");
             }
-            UpdateDataGrid();*/
+            ActualizarControles();
         }
 
         private void btnLlenar_Click(object sender, EventArgs e)
@@ -173,7 +171,7 @@ namespace Arbol_Binario_Busqueda
         {
             Random random = new();
             string[] nombresAccesorios = { "Googgles", "Traje de baño", "Respirador", "Pelota de playa", "Aletas", "Bikini", "Salvavidas", "Traje de buzo" };
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < 10; i++)
             {
                 cbxCategoria.SelectedIndex = random.Next(0, 4);
                 cbxTalla.SelectedIndex = random.Next(0, 4);
@@ -183,10 +181,10 @@ namespace Arbol_Binario_Busqueda
                 if (num == 2) material = rbtnlicra.Text;
                 if (num == 3) material = rbtnAlgodon.Text;
 
-                AccesorioNadador accesorio = new AccesorioNadador
+                AccesorioNadador accesorio = new()
                 {
                     Nombre = nombresAccesorios[random.Next(nombresAccesorios.Length)],
-                    Id = random.Next(1, 10000),
+                    Id = random.Next(1, 10000).ToString(),
                     Categoria = char.Parse(cbxCategoria.Text),
                     Ajustable = random.NextDouble() >= 0.5,
                     FechaCompra = dtpFechaCompra.Value.AddDays(random.Next(999)),
@@ -203,12 +201,41 @@ namespace Arbol_Binario_Busqueda
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    MessageBox.Show(ex.Message);
+                    continue;
                 }
-                ResetControls(pnlAccesoryData);
+
+                ReiniciarControles(pnlControles.Panel1);
             }
-            ActualizarArbol();
-            ActualizarTabla();
+            ActualizarControles();
+        }
+
+        private void BtnRestoreView_Click(object sender, EventArgs e)
+        {
+            CentralizarArbolSvg();
+        }
+
+        private void btnSearch_Click(object sender, EventArgs e)
+        {
+            AccesorioNadador accesorio;
+            accesorio = Buscar(new() { Id = nudSearchId.Value.ToString() });
+
+            if (accesorio == null)
+            {
+                MessageBox.Show("El accesorio no se encuentra en el arbol", "Inexistente", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            dtgTabla.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            foreach (DataGridViewRow row in dtgTabla.Rows)
+            {
+                if (row.Cells["Id"].Value.ToString() == accesorio.Id.ToString())
+                {
+                    row.Selected = true;
+                    break;
+                }
+            }
+            MessageBox.Show($"Accesorio {accesorio} encontrado. Nombre: {accesorio.Nombre}");
         }
 
         private void BtnUpload_Click(object sender, EventArgs e)
@@ -227,8 +254,9 @@ namespace Arbol_Binario_Busqueda
         {
             accesorio = arbol.Buscar(accesorio);
             if (accesorio == null) return default;
+
             txtNombre.Text = accesorio.Nombre;
-            nudId.Value = accesorio.Id;
+            nudId.Value = decimal.Parse(accesorio.Id);
             cbxCategoria.Text = accesorio.Categoria.ToString();
             nudPrecio.Value = (decimal)accesorio.Precio;
             dtpFechaCompra.Value = accesorio.FechaCompra;
@@ -237,7 +265,6 @@ namespace Arbol_Binario_Busqueda
             cbxTalla.Text = accesorio.Talla;
 
             picImagen.ImageLocation = accesorio.RutaImagen;
-            picImagen.SizeMode = PictureBoxSizeMode.StretchImage;
             picImagen.Refresh();
 
             if (accesorio.Material == "Licra") rbtnlicra.Checked = true;
@@ -247,21 +274,67 @@ namespace Arbol_Binario_Busqueda
             return accesorio;
         }
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-        }
-
         private void DtgTabla_SelectionChanged(object sender, EventArgs e)
         {
-            if (dtgTabla.SelectedCells.Count > 0)
+            if (dtgTabla.SelectedCells.Count <= 0) return;
+            DataGridViewRow selectedRow = dtgTabla.Rows[dtgTabla.SelectedCells[0].RowIndex];
+            AccesorioNadador accesorio = Buscar(new() { Id = selectedRow.Cells["Id"].Value.ToString() });
+
+            foreach (SVGGElement element in svgNodes)
             {
-                DataGridViewRow selectedRow = dtgTabla.Rows[dtgTabla.SelectedCells[0].RowIndex];
-                AccesorioNadador accesorio = new()
+                var childrens = svgTree.GetElementById(element.Id).Children;
+                var elipse = childrens.GetSvgElementOf<SvgEllipse>();
+                if (element.Id == accesorio.Id.ToString())
                 {
-                    Id = (int)selectedRow.Cells["Id"].Value,
-                };
-                Buscar(accesorio);
+                    elipse.Fill = new SvgColourServer(Color.FromArgb(94, 129, 172));
+                }
+                else
+                {
+                    elipse.Fill = new SvgColourServer(Color.Transparent);
+                }
             }
+
+            PicboxTree.Image = svgTree.Draw();
+            PicboxTree.Refresh();
+        }
+
+        private void PicboxTree_Click(object sender, EventArgs e)
+        {
+            if (arbol.Vacio) return;
+
+            MouseEventArgs me = (MouseEventArgs)e;
+            double cx = me.X * .75 - 3;
+            double cy = me.Y * .75 - (svgTree.Height - 4) * .75;
+
+            foreach (SVGGElement element in svgNodes)
+            {
+                SvgElementCollection childrens = svgTree.GetElementById(element.Id).Children;
+                SvgEllipse elipse = childrens.GetSvgElementOf<SvgEllipse>();
+
+                Aspose.Svg.DataTypes.SVGRect nodeBox = element.GetBBox();
+                if (cx > nodeBox.X && cx < nodeBox.X + nodeBox.Width && cy > nodeBox.Y && cy < nodeBox.Y + nodeBox.Height)
+                {
+                    elipse.Fill = new SvgColourServer(Color.FromArgb(94, 129, 172));
+                    Buscar(new AccesorioNadador { Id = element.Id });
+                    dtgTabla.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+                    foreach (DataGridViewRow row in dtgTabla.Rows)
+                    {
+                        if (row.Cells["Id"].Value.ToString() == element.Id.ToString())
+                        {
+                            row.Selected = true;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                else
+                {
+                    elipse.Fill = new SvgColourServer(Color.Transparent);
+                }
+            }
+
+            PicboxTree.Image = svgTree.Draw();
+            PicboxTree.Refresh();
         }
 
         private void PicboxTree_MouseDown(object sender, MouseEventArgs e)
@@ -288,6 +361,11 @@ namespace Arbol_Binario_Busqueda
             dragging = false;
         }
 
+        private void RbtnInOrden_CheckedChanged(object sender, EventArgs e)
+        {
+            ActualizarTabla();
+        }
+
         private void RbtnPostOrden_CheckedChanged(object sender, EventArgs e)
         {
             ActualizarTabla();
@@ -298,14 +376,14 @@ namespace Arbol_Binario_Busqueda
             ActualizarTabla();
         }
 
-        private void ResetControls(Panel pnlData)
+        private void ReiniciarControles(Panel pnlData)
         {
             foreach (Control control in pnlData.Controls)
             {
                 NumericUpDown nud = control as NumericUpDown;
-                if (control is TextBox || control is ComboBox) control.Text = null;
+                if (control is TextBox || control is ComboBox) control.Text = "";
                 if (control is NumericUpDown) nud.Value = 0;
-                picImagen.ImageLocation = null;
+                picImagen.ImageLocation = "";
             }
         }
 
@@ -335,39 +413,19 @@ namespace Arbol_Binario_Busqueda
             return true;
         }
 
-        private void BtnRestoreView_Click(object sender, EventArgs e)
-        {
-            PicboxTree.Location = new Point(0, 0);
-        }
+        private bool enEjecucion;
 
-        private void btnSearch_Click(object sender, EventArgs e)
+        private async void BtnRecorrido_Click(object sender, EventArgs e)
         {
-            AccesorioNadador accesorio = new()
-            {
-                Id = (int)nudSearchId.Value
-            };
-            accesorio = Buscar(accesorio);
-            if (accesorio == null)
-            {
-                MessageBox.Show("El accesorio no se encuentra en el arbol", "Inexistente", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
-                return;
-            }
-            dtgTabla.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            if (enEjecucion) return;
+
             foreach (DataGridViewRow row in dtgTabla.Rows)
             {
-                if (row.Cells["Id"].Value.ToString() == accesorio.Id.ToString())
-                {
-                    row.Selected = true;
-                    break;
-                }
+                enEjecucion = true;
+                row.Selected = true;
+                await Task.Delay(800);
             }
-            MessageBox.Show($"Accesorio {accesorio} encontrado. Nombre: {accesorio.Nombre}");
-        }
-
-        private void PicboxTree_Click(object sender, EventArgs e)
-        {
-            MouseEventArgs me = (MouseEventArgs)e;
-            MessageBox.Show(string.Format("X: {0} Y: {1}", (me.X * .75) - 4, (me.Y * .75) - 656));
+            enEjecucion = false;
         }
     }
 }

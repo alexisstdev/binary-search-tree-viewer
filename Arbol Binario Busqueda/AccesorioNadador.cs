@@ -4,7 +4,7 @@ namespace Arbol_Binario_Busqueda
 {
     public class AccesorioNadador : IComparable<AccesorioNadador>
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public bool Ajustable { get; set; }
         public DateTime FechaCompra { get; set; }
         public char Categoria { get; set; }
@@ -22,7 +22,6 @@ namespace Arbol_Binario_Busqueda
 
         public override string ToString()
         {
-            //return $"Accesorio\n\n Id: {Id}\nNombre del producto: {Nombre}";
             return Id.ToString();
         }
     }

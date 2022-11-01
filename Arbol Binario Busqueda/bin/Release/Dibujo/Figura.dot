@@ -1,0 +1,31 @@
+digraph Figura {
+                             bgcolor = transparent
+                             node[
+                             color = lightskyblue4
+                             fontsize = 14
+                             fontname = Arial
+                             fontcolor = white
+                             width = .7
+                             height = .7
+                             ]
+4064[id=4064]
+2608[id=2608]
+2125[id=2125]
+9468[id=9468]
+6040[id=6040]
+5397[id=5397]
+8871[id=8871]
+7739[id=7739]
+7343[id=7343]
+8239[id=8239]
+Raíz-> 4064 [color = white];
+4064 -> 2608 [color = white];
+2608 -> 2125 [color = white];
+4064 -> 9468 [color = white];
+9468 -> 6040 [color = white];
+6040 -> 5397 [color = white];
+6040 -> 8871 [color = white];
+8871 -> 7739 [color = white];
+7739 -> 7343 [color = white];
+7739 -> 8239 [color = white];
+}
