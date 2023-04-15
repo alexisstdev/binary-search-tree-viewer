@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Arbol_Binario_Busqueda.Properties {
+namespace Binary_Search_Tree.Properties {
     using System;
     
     

@@ -3,71 +3,70 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
-namespace Arbol_Binario_Busqueda
+namespace Binary_Search_Tree
 {
-    public class ArbolBB<T> where T : IComparable<T>
+    public class BinarySearchTree<T> where T : IComparable<T>
     {
-        public ArbolBB()
+        public BinarySearchTree()
         {
-            Raiz = null;
+            Root = null;
         }
 
-        ~ArbolBB()
+        ~BinarySearchTree()
         {
-            Vaciar();
+            Clear();
         }
 
-        public Nodo<T> Raiz { get; set; }
-        public bool Vacio { get => Raiz == null; }
+        public Node<T> Root { get; set; }
+        public bool Empty { get => Root == null; }
 
-        public void Agregar(T dato)
+        public void Add(T dato)
         {
-            if (Vacio)
+            if (Empty)
             {
-                Raiz = new Nodo<T> { Dato = dato };
+                Root = new Node<T> { Data = dato };
                 return;
             }
 
-            Nodo<T> nodoActual = Raiz;
+            Node<T> current = Root;
 
             while (true)
             {
-                if (dato.CompareTo(nodoActual.Dato) < 0)
+                if (dato.CompareTo(current.Data) < 0)
                 {
-                    if (nodoActual.HijoIzq == null)
+                    if (current.left == null)
                     {
-                        nodoActual.HijoIzq = new Nodo<T> { Dato = dato };
+                        current.left = new Node<T> { Data = dato };
                         break;
                     }
-                    nodoActual = nodoActual.HijoIzq;
+                    current = current.left;
                 }
-                else if (dato.CompareTo(nodoActual.Dato) > 0)
+                else if (dato.CompareTo(current.Data) > 0)
                 {
-                    if (nodoActual.HijoDer == null)
+                    if (current.right == null)
                     {
-                        nodoActual.HijoDer = new Nodo<T> { Dato = dato };
+                        current.right = new Node<T> { Data = dato };
                         break;
                     }
-                    nodoActual = nodoActual.HijoDer;
+                    current = current.right;
                 }
-                else throw new Exception("Este elemento ya se encuentra en el árbol");
+                else throw new Exception("This element is already in the tree");
             }
         }
 
-        public T Buscar(T dato)
+        public T Search(T data)
         {
-            foreach (T item in PreOrden())
+            foreach (T item in Preorder())
             {
-                if (item.CompareTo(dato) == 0) return item;
+                if (item.CompareTo(data) == 0) return item;
             }
             return default;
         }
 
-        public void CrearArchivoDot()
+        public void CreateDotFile()
         {
-            if (Vacio) return;
+            if (Empty) return;
 
-            //Encabezado del .DOT
             string txtDot = @"digraph Figura {
                              bgcolor = transparent
                              node[
@@ -79,33 +78,30 @@ namespace Arbol_Binario_Busqueda
                              height = .7
                              ]" + "\n";
 
-            //Asigna un ID a cada elemento del .DOT
-            foreach (T dato in PreOrden()) txtDot += dato + $"[id={dato}]\n";
+            foreach (T dato in Preorder()) txtDot += dato + $"[id={dato}]\n";
 
-            txtDot += $"Raíz-> {Raiz.Dato} [color = white];";
+            txtDot += $"Root-> {Root.Data} [color = white];";
 
             //Cuerpo del .DOT
-            RecorrerNodos(Raiz);
-            void RecorrerNodos(Nodo<T> nodoActual)
+            TraverseNodes(Root);
+            void TraverseNodes(Node<T> current)
             {
-                if (nodoActual == null) return;
+                if (current == null) return;
 
-                if (nodoActual.HijoIzq != null)
+                if (current.left != null)
                 {
-                    txtDot += $"\n{nodoActual.Dato} -> {nodoActual.HijoIzq.Dato} [color = white];";
-                    RecorrerNodos(nodoActual.HijoIzq);
+                    txtDot += $"\n{current.Data} -> {current.left.Data} [color = white];";
+                    TraverseNodes(current.left);
                 }
-                if (nodoActual.HijoDer != null)
+                if (current.right != null)
                 {
-                    txtDot += $"\n{nodoActual.Dato} -> {nodoActual.HijoDer.Dato} [color = white];";
-                    RecorrerNodos(nodoActual.HijoDer);
+                    txtDot += $"\n{current.Data} -> {current.right.Data} [color = white];";
+                    TraverseNodes(current.right);
                 }
             }
 
-            //Final del .DOT
             txtDot += "\n}";
 
-            //Crea el archivo .DOT y el archivo batch (en caso de que no exista)
             Directory.CreateDirectory("Dibujo/");
             StreamWriter sw;
 
@@ -118,7 +114,6 @@ namespace Arbol_Binario_Busqueda
                     sw.Write("@echo off \ndel Dibujo/Figura.svg \ndot -Tsvg Dibujo/Figura.dot -o Dibujo/Figura.svg");
             }
 
-            //Ejecuta el batch con la consola oculta
             Process process = new()
             {
                 StartInfo = new ProcessStartInfo()
@@ -133,139 +128,123 @@ namespace Arbol_Binario_Busqueda
             process.WaitForExit();
         }
 
-        public void Eliminar(T dato)
+        public void Remove(T dato)
         {
-            EliminarRec(Raiz);
+            RemoveRec(Root);
 
-            Nodo<T> EliminarRec(Nodo<T> nodoActual)
+            Node<T> RemoveRec(Node<T> current)
             {
-                if (nodoActual == null)
-                    return nodoActual;
-                if (dato.CompareTo(nodoActual.Dato) < 0)
-                    nodoActual.HijoIzq = EliminarRec(nodoActual.HijoIzq);
-                else if (dato.CompareTo(nodoActual.Dato) > 0)
-                    nodoActual.HijoDer = EliminarRec(nodoActual.HijoDer);
+                if (current == null)
+                    return current;
+                if (dato.CompareTo(current.Data) < 0)
+                    current.left = RemoveRec(current.left);
+                else if (dato.CompareTo(current.Data) > 0)
+                    current.right = RemoveRec(current.right);
                 else
                 {
-                    if (nodoActual.HijoIzq == null)
-                        return nodoActual.HijoDer;
-                    else if (nodoActual.HijoDer == null)
-                        return nodoActual.HijoIzq;
-                    nodoActual.Dato = ValorMenor(nodoActual.HijoDer);
-                    nodoActual.HijoDer = EliminarRec(nodoActual.HijoDer);
+                    if (current.left == null)
+                        return current.right;
+                    else if (current.right == null)
+                        return current.left;
+                    current.Data = MinValue(current.right);
+                    current.right = RemoveRec(current.right);
                 }
 
-                return nodoActual;
-                T ValorMenor(Nodo<T> nodoActual)
+                return current;
+                T MinValue(Node<T> current)
                 {
-                    T minv = nodoActual.Dato;
-                    while (nodoActual.HijoIzq != null)
+                    T minv = current.Data;
+                    while (current.left != null)
                     {
-                        minv = nodoActual.HijoIzq.Dato;
-                        nodoActual = nodoActual.HijoIzq;
+                        minv = current.left.Data;
+                        current = current.left;
                     }
                     return minv;
                 }
             }
         }
 
-        public IEnumerable<T> InOrden()
+        public IEnumerable<T> Inorder()
         {
-            return InOrden(Raiz);
+            return Inorder(Root);
 
-            static IEnumerable<T> InOrden(Nodo<T> nodoActual)
+            static IEnumerable<T> Inorder(Node<T> current)
             {
-                if (nodoActual == null) yield break;
+                if (current == null) yield break;
 
-                foreach (var dato in InOrden(nodoActual.HijoIzq))
+                foreach (var data in Inorder(current.left))
                 {
-                    yield return dato;
+                    yield return data;
                 }
 
-                yield return nodoActual.Dato;
+                yield return current.Data;
 
-                foreach (var dato in InOrden(nodoActual.HijoDer))
+                foreach (var data in Inorder(current.right))
                 {
-                    yield return dato;
+                    yield return data;
                 }
             }
         }
 
-        public IEnumerable<T> PostOrden()
+        public IEnumerable<T> Postorder()
         {
-            return PostOrden(Raiz);
+            return PostOrden(Root);
 
-            static IEnumerable<T> PostOrden(Nodo<T> nodoActual)
+            static IEnumerable<T> PostOrden(Node<T> current)
             {
-                if (nodoActual == null) yield break;
+                if (current == null) yield break;
 
-                foreach (var dato in PostOrden(nodoActual.HijoIzq))
+                foreach (var data in PostOrden(current.left))
+                {
+                    yield return data;
+                }
+
+                foreach (var dato in PostOrden(current.right))
                 {
                     yield return dato;
                 }
 
-                foreach (var dato in PostOrden(nodoActual.HijoDer))
-                {
-                    yield return dato;
-                }
-
-                yield return nodoActual.Dato;
+                yield return current.Data;
             }
         }
 
-        public IEnumerable<T> PreOrden()
+        public IEnumerable<T> Preorder()
         {
-            return PreOrden(Raiz);
+            return PreOrden(Root);
 
-            static IEnumerable<T> PreOrden(Nodo<T> nodoActual)
+            static IEnumerable<T> PreOrden(Node<T> currenr)
             {
-                if (nodoActual == null) yield break;
+                if (currenr == null) yield break;
 
-                yield return nodoActual.Dato;
+                yield return currenr.Data;
 
-                foreach (var dato in PreOrden(nodoActual.HijoIzq))
+                foreach (var data in PreOrden(currenr.left))
                 {
-                    yield return dato;
+                    yield return data;
                 }
 
-                foreach (var dato in PreOrden(nodoActual.HijoDer))
+                foreach (var data in PreOrden(currenr.right))
                 {
-                    yield return dato;
+                    yield return data;
                 }
             }
         }
 
-        public void Vaciar()
+        public void Clear()
         {
-            if (Vacio) return;
+            if (Empty) return;
 
-            VaciarRec(Raiz);
-            Raiz = null;
-            void VaciarRec(Nodo<T> nodoActual)
+            Clear(Root);
+            Root = null;
+            void Clear(Node<T> current)
             {
-                if (nodoActual != null)
+                if (current != null)
                 {
-                    VaciarRec(nodoActual.HijoIzq);
-                    VaciarRec(nodoActual.HijoDer);
-                    Eliminar(nodoActual.Dato);
+                    Clear(current.left);
+                    Clear(current.right);
+                    Remove(current.Data);
                 }
             }
         }
     }
 }
-
-/*
-Agregar Recursivo
-public Nodo<T> Agregar(T dato, Nodo<T> raiz)
-{
-    if (raiz == null) return new Nodo<T> { Dato = dato };
-
-    if (dato.CompareTo(raiz.Dato) < 0)
-        raiz.HijoIzq = Agregar(dato, raiz.HijoIzq);
-
-    if (dato.CompareTo(raiz.Dato) > 0)
-        raiz.HijoDer = Agregar(dato, raiz.HijoDer);
-    else throw new Exception("No se aceptan duplicados");
-
-    return raiz;
-}*/

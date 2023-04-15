@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Arbol_Binario_Busqueda
+namespace Binary_Search_Tree
 {
     internal static class Program
     {

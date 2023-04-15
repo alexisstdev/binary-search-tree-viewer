@@ -1,21 +1,21 @@
-﻿namespace Arbol_Binario_Busqueda
+﻿namespace Binary_Search_Tree
 {
-    public class Nodo<T>
+    public class Node<T>
     {
-        public T Dato { get; set; }
-        public Nodo<T> HijoDer { get; set; }
-        public Nodo<T> HijoIzq { get; set; }
+        public T Data { get; set; }
+        public Node<T> right { get; set; }
+        public Node<T> left { get; set; }
 
-        public Nodo()
+        public Node()
         {
-            HijoDer = null;
-            HijoIzq = null;
-            Dato = default;
+            right = null;
+            left = null;
+            Data = default;
         }
 
-        ~Nodo()
+        ~Node()
         {
-            Dato = default;
+            Data = default;
         }
     }
 }
